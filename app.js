@@ -1,15 +1,8 @@
 // ============================================
-// CONFIGURACIÓN — CAMBIA ESTOS VALORES
+// CONFIGURACIÓN
 // ============================================
 const CONFIG = {
-    // Azure Function URL
     FUNCTION_URL: "https://dataco-transform-gqdmhrf2ajbradbp.westus-01.azurewebsites.net",
-    
-    // Storage Account
-    STORAGE_ACCOUNT: "stadatacopipeline",
-    STORAGE_KEY: "PEGA_AQUI_TU_KEY",
-    
-    // Azure SQL — necesitas una API intermedia
     SQL_API: "https://dataco-transform-gqdmhrf2ajbradbp.westus-01.azurewebsites.net/api"
 };
 
@@ -21,11 +14,10 @@ function showPage(page) {
     document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
     document.getElementById('page-' + page).classList.add('active');
     event.target.classList.add('active');
-    
+
     if (page === 'dashboard') loadDashboard();
     if (page === 'upload') loadDataLakeFiles();
     if (page === 'pipeline') loadPipelineHistory();
-    if (page === 'data') {}
 }
 
 // ============================================
@@ -36,16 +28,15 @@ async function loadDashboard() {
         const response = await fetch(`${CONFIG.SQL_API}/stats`);
         if (!response.ok) throw new Error('API no disponible');
         const data = await response.json();
-        
+
         document.getElementById('stat-ventas').textContent = data.ventas?.toLocaleString() || '--';
         document.getElementById('stat-inventario').textContent = data.inventario?.toLocaleString() || '--';
         document.getElementById('stat-gps').textContent = data.gps?.toLocaleString() || '--';
         document.getElementById('stat-crm').textContent = data.crm?.toLocaleString() || '--';
         document.getElementById('last-update').textContent = 'Última actualización: ' + new Date().toLocaleString('es-CO');
-        
+
         renderCharts(data);
     } catch (error) {
-        // Usar datos de ejemplo si la API no está disponible
         loadDemoData();
     }
 }
@@ -56,7 +47,7 @@ function loadDemoData() {
     document.getElementById('stat-gps').textContent = '741';
     document.getElementById('stat-crm').textContent = '900';
     document.getElementById('last-update').textContent = 'Última actualización: ' + new Date().toLocaleString('es-CO');
-    
+
     renderCharts({
         porRegion: {
             labels: ['ANTIOQUIA', 'ATLANTICO', 'SANTANDER', 'VALLE', 'CUNDINAMARCA'],
@@ -105,7 +96,7 @@ function renderCharts(data) {
             responsive: true,
             plugins: { legend: { display: false } },
             scales: {
-                y: { ticks: { callback: v => '$' + (v/1000000).toFixed(0) + 'M' } }
+                y: { ticks: { callback: v => '$' + (v / 1000000).toFixed(0) + 'M' } }
             }
         }
     });
@@ -144,7 +135,7 @@ function renderCharts(data) {
             responsive: true,
             plugins: { legend: { display: false } },
             scales: {
-                x: { ticks: { callback: v => '$' + (v/1000000).toFixed(0) + 'M' } }
+                x: { ticks: { callback: v => '$' + (v / 1000000).toFixed(0) + 'M' } }
             }
         }
     });
@@ -176,60 +167,58 @@ let selectedFiles = [];
 function handleFiles(files) {
     selectedFiles = Array.from(files);
     const fileList = document.getElementById('file-list');
-    
+
     if (selectedFiles.length === 0) return;
-    
+
     fileList.innerHTML = selectedFiles.map(f => `
         <div class="file-item">
             <div class="file-info">
                 <span style="font-size:20px">📄</span>
                 <div>
                     <div class="file-name">${f.name}</div>
-                    <div class="file-size">${(f.size/1024).toFixed(1)} KB</div>
+                    <div class="file-size">${(f.size / 1024).toFixed(1)} KB</div>
                 </div>
             </div>
             <span class="badge pending">Pendiente</span>
         </div>
     `).join('');
-    
+
     document.getElementById('btn-upload').disabled = false;
 }
 
 async function uploadFiles() {
     if (selectedFiles.length === 0) return;
-    
+
     const btn = document.getElementById('btn-upload');
     btn.disabled = true;
     btn.textContent = '⏳ Subiendo...';
-    
+
     document.getElementById('upload-progress').classList.remove('hidden');
-    
     showAlert('upload-alert', 'info', '⏳ Subiendo archivos al Data Lake...');
-    
+
     try {
         for (let i = 0; i < selectedFiles.length; i++) {
             const file = selectedFiles[i];
             const progress = ((i + 1) / selectedFiles.length) * 100;
-            
+
             document.getElementById('progress-fill').style.width = progress + '%';
             document.getElementById('progress-text').textContent = `Subiendo ${file.name}...`;
-            
+
             await uploadToDataLake(file);
-            
-            // Actualizar badge
+
             const badges = document.querySelectorAll('.badge.pending');
             if (badges[0]) {
                 badges[0].className = 'badge success';
                 badges[0].textContent = '✓ Subido';
             }
         }
-        
+
         showAlert('upload-alert', 'success', `✅ ${selectedFiles.length} archivo(s) subido(s) al Data Lake exitosamente`);
         document.getElementById('btn-transform').disabled = false;
         btn.textContent = '✅ Subido';
-        
+
         loadDataLakeFiles();
-        
+
     } catch (error) {
         showAlert('upload-alert', 'error', '❌ Error subiendo archivos: ' + error.message);
         btn.disabled = false;
@@ -237,44 +226,37 @@ async function uploadFiles() {
     }
 }
 
+// ✅ CORREGIDO: usa la Azure Function como intermediario (evita CORS y exponer keys)
 async function uploadToDataLake(file) {
     const content = await file.arrayBuffer();
-    const url = `https://${CONFIG.STORAGE_ACCOUNT}.dfs.core.windows.net/raw/${file.name}`;
-    
-    const date = new Date().toUTCString();
-    
-    const response = await fetch(url, {
-        method: 'PUT',
-        headers: {
-            'x-ms-version': '2020-04-08',
-            'x-ms-date': date,
-            'x-ms-blob-type': 'BlockBlob',
-            'Content-Type': 'text/csv',
-            'Content-Length': content.byteLength,
-            'Authorization': `SharedKey ${CONFIG.STORAGE_ACCOUNT}:${CONFIG.STORAGE_KEY}`
-        },
+    const response = await fetch(`${CONFIG.FUNCTION_URL}/api/upload?filename=${file.name}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/csv' },
         body: content
     });
-    
     if (!response.ok) throw new Error(`Error ${response.status}`);
 }
 
+// ✅ CORREGIDO: endpoint correcto /api/transform
 async function runTransformation() {
     const btn = document.getElementById('btn-transform');
     btn.disabled = true;
     btn.textContent = '⚡ Ejecutando...';
-    
+
     showAlert('upload-alert', 'info', '⚡ Ejecutando transformación en Azure Function...');
-    
+
     try {
-        const response = await fetch(`${CONFIG.FUNCTION_URL}/api/transformacion_dataco`, {
+        const response = await fetch(`${CONFIG.FUNCTION_URL}/api/transform`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
         });
-        
+
+        if (!response.ok) throw new Error(`Error ${response.status}`);
+
+        const result = await response.json();
         showAlert('upload-alert', 'success', '🎉 Transformación completada. Los datos están actualizados en Azure SQL.');
         btn.textContent = '✅ Completado';
-        
+
     } catch (error) {
         showAlert('upload-alert', 'warning', '⚠️ La transformación se ejecuta automáticamente cada 4 horas en Azure.');
         btn.disabled = false;
@@ -287,7 +269,7 @@ async function runTransformation() {
 // ============================================
 async function loadDataLakeFiles() {
     const container = document.getElementById('datalake-files');
-    
+
     const archivos = [
         { name: 'ventas_sap.csv', size: '86.53 KB', date: '8/5/2026' },
         { name: 'inventario_oracle.csv', size: '62.69 KB', date: '8/5/2026' },
@@ -297,7 +279,7 @@ async function loadDataLakeFiles() {
         { name: 'ventas_dataco_v2.csv', size: '72.4 KB', date: '7/5/2026' },
         { name: 'ventas_dataco_v3.csv', size: '75.85 KB', date: '8/5/2026' }
     ];
-    
+
     container.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
             <span style="font-size:13px; color:#666;">Mostrando ${archivos.length} archivos en contenedor <strong>raw/</strong></span>
@@ -325,7 +307,7 @@ async function loadDataLakeFiles() {
 // ============================================
 async function loadPipelineHistory() {
     const container = document.getElementById('pipeline-history');
-    
+
     const ejecuciones = [
         { fecha: '17/05/2026 19:15', duracion: '1,088ms', estado: 'Succeeded', trigger: 'Manual' },
         { fecha: '17/05/2026 19:07', duracion: '15,257ms', estado: 'Failed', trigger: 'Manual' },
@@ -336,7 +318,7 @@ async function loadPipelineHistory() {
         { fecha: '12/05/2026 01:52', duracion: '22s', estado: 'Succeeded', trigger: 'Trigger_zbj' },
         { fecha: '11/05/2026 21:52', duracion: '22s', estado: 'Succeeded', trigger: 'Trigger_zbj' }
     ];
-    
+
     container.innerHTML = `
         <table>
             <thead>
@@ -376,7 +358,7 @@ async function loadTable(tabla) {
             <p>Cargando datos de ${tabla}...</p>
         </div>
     `;
-    
+
     try {
         const response = await fetch(`${CONFIG.SQL_API}/table/${tabla}`);
         if (!response.ok) throw new Error('API no disponible');
@@ -385,6 +367,27 @@ async function loadTable(tabla) {
     } catch (error) {
         renderDemoTable(tabla);
     }
+}
+
+function renderTable(tabla, data) {
+    const container = document.getElementById('table-container');
+    container.innerHTML = `
+        <div class="alert info" style="margin-bottom:15px;">
+            📊 Mostrando ${data.total} registros de <strong>${tabla}</strong>
+        </div>
+        <div style="overflow-x:auto;">
+            <table>
+                <thead>
+                    <tr>${data.columns.map(c => `<th>${c}</th>`).join('')}</tr>
+                </thead>
+                <tbody>
+                    ${data.rows.map(row => `
+                        <tr>${row.map(cell => `<td>${cell}</td>`).join('')}</tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
 }
 
 function renderDemoTable(tabla) {
@@ -430,10 +433,10 @@ function renderDemoTable(tabla) {
             ]
         }
     };
-    
+
     const data = demoData[tabla];
     if (!data) return;
-    
+
     const container = document.getElementById('table-container');
     container.innerHTML = `
         <div class="alert info" style="margin-bottom:15px;">
@@ -465,6 +468,6 @@ function showAlert(containerId, type, message) {
 }
 
 // Cargar dashboard al inicio
-window.onload = function() {
+window.onload = function () {
     loadDashboard();
 };
