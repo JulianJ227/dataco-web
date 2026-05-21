@@ -229,12 +229,22 @@ async function uploadFiles() {
 // ✅ CORREGIDO: usa la Azure Function como intermediario (evita CORS y exponer keys)
 async function uploadToDataLake(file) {
     const content = await file.arrayBuffer();
-    const response = await fetch(`${CONFIG.FUNCTION_URL}/api/upload?filename=${file.name}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/csv' },
-        body: content
-    });
-    if (!response.ok) throw new Error(`Error ${response.status}`);
+    
+    const response = await fetch(
+        `${CONFIG.FUNCTION_URL}/api/upload?filename=${file.name}`,
+        {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/csv' },
+            body: content
+        }
+    );
+    
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Error subiendo archivo');
+    }
+    
+    return await response.json();
 }
 
 // ✅ CORREGIDO: endpoint correcto /api/transform
@@ -242,23 +252,24 @@ async function runTransformation() {
     const btn = document.getElementById('btn-transform');
     btn.disabled = true;
     btn.textContent = '⚡ Ejecutando...';
-
+    
     showAlert('upload-alert', 'info', '⚡ Ejecutando transformación en Azure Function...');
-
+    
     try {
         const response = await fetch(`${CONFIG.FUNCTION_URL}/api/transform`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' }
         });
-
-        if (!response.ok) throw new Error(`Error ${response.status}`);
-
-        const result = await response.json();
-        showAlert('upload-alert', 'success', '🎉 Transformación completada. Los datos están actualizados en Azure SQL.');
+        
+        const data = await response.json();
+        
+        showAlert('upload-alert', 'success', '🎉 Transformación completada. Datos actualizados en Azure SQL.');
         btn.textContent = '✅ Completado';
-
+        
+        loadDashboard();
+        
     } catch (error) {
-        showAlert('upload-alert', 'warning', '⚠️ La transformación se ejecuta automáticamente cada 4 horas en Azure.');
+        showAlert('upload-alert', 'error', '❌ Error: ' + error.message);
         btn.disabled = false;
         btn.textContent = '⚡ Ejecutar Transformación';
     }
