@@ -2,8 +2,8 @@
 // CONFIGURACIÓN
 // ============================================
 const CONFIG = {
-    FUNCTION_URL: "https://dataco-transform-gqdmhrf2ajbradbp.westus-01.azurewebsites.net",
-    SQL_API: "https://dataco-transform-gqdmhrf2ajbradbp.westus-01.azurewebsites.net/api"
+    FUNCTION_URL: "https://dataco-api-b7fkgwe5a5hhaee5.westus-01.azurewebsites.net",
+    SQL_API: "https://dataco-api-b7fkgwe5a5hhaee5.westus-01.azurewebsites.net"
 };
 
 // ============================================
@@ -273,7 +273,7 @@ async function runTransformation() {
         btn.disabled = false;
         btn.textContent = '⚡ Ejecutar Transformación';
     }
-}
+}   
 
 // ============================================
 // ARCHIVOS EN DATA LAKE
