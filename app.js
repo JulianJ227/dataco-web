@@ -226,24 +226,24 @@ async function uploadFiles() {
     }
 }
 
-// ✅ CORREGIDO: usa la Azure Function como intermediario (evita CORS y exponer keys)
 async function uploadToDataLake(file) {
     const content = await file.arrayBuffer();
-    
+    const bytes = new Uint8Array(content);
+
     const response = await fetch(
-        `${CONFIG.FUNCTION_URL}/api/upload?filename=${file.name}`,
+        `${CONFIG.SQL_API}/api/upload?filename=${encodeURIComponent(file.name)}`,
         {
             method: 'POST',
-            headers: { 'Content-Type': 'text/csv' },
-            body: content
+            headers: { 'Content-Type': 'application/octet-stream' },
+            body: bytes
         }
     );
-    
+
     if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || 'Error subiendo archivo');
     }
-    
+
     return await response.json();
 }
 
