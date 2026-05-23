@@ -25,7 +25,7 @@ function showPage(page) {
 // ============================================
 async function loadDashboard() {
     try {
-        const response = await fetch(`${CONFIG.SQL_API}/stats`);
+        const response = await fetch(`${CONFIG.SQL_API}/api/stats`);
         if (!response.ok) throw new Error('API no disponible');
         const data = await response.json();
 
