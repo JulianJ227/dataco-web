@@ -2,7 +2,9 @@
 
 > Dashboard web para el pipeline de datos en la nube de DataCo, desarrollado como parte del proyecto integrador de Computación en la Nube — Tecnológico de Antioquia 2026-1.
 
-🌐 **Demo en vivo:** [https://julianj227.github.io/dataco-web/](https://julianjz.github.io/dataco-web/)
+> ⚠️ **Nota:** Los servicios de Azure asociados a este proyecto han sido eliminados tras la entrega del trabajo académico. La página web muestra datos de demostración. Este repositorio se mantiene como evidencia del trabajo realizado.
+
+🌐 **Repositorio:** [https://julianj227.github.io/dataco-web/](https://julianj227.github.io/dataco-web/)
 
 ---
 
