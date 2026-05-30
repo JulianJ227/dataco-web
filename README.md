@@ -167,6 +167,57 @@ El pipeline completo implementado en Azure incluye:
 | Power BI Desktop | Reportes ejecutivos |
 
 ---
+## 🎯 Problemas de calidad de datos resueltos
+
+El pipeline resolvió los siguientes problemas reales de DataCo:
+
+| Problema | Sistema | Solución implementada |
+|----------|---------|----------------------|
+| Fechas en formato DD/MM/YYYY | SAP | Estandarización a YYYY-MM-DD |
+| Registros duplicados | SAP | Eliminación por id_factura |
+| Códigos de producto inconsistentes | Oracle | PRD-001 → PROD001 |
+| Fechas de vencimiento nulas | Oracle | Relleno con "SIN_VENCIMIENTO" |
+| Tiempos de entrega negativos | GPS | Eliminación de registros inválidos |
+| Coordenadas GPS nulas | GPS | Relleno con valor 0 |
+| Nombres de clientes inconsistentes | Salesforce | Normalización a nombre único |
+| Valores de acuerdo nulos | Salesforce | Relleno con 0 |
+
+---
+
+## 📊 Resultados obtenidos
+
+| Métrica | Resultado |
+|---------|-----------|
+| Fuentes integradas | 4 (SAP, Oracle, GPS, Salesforce) |
+| Registros procesados | 3.841 en total |
+| Tasa de calidad SAP | 96% |
+| Frecuencia de actualización | Cada 4 horas automáticamente |
+| Tiempo de procesamiento | ~1 segundo por ejecución |
+| Costo mensual del pipeline | ~$13 USD (App Service B1) |
+
+---
+
+## 🧠 Aprendizajes del proyecto
+
+- Implementación de arquitecturas de datos modernas en Microsoft Azure
+- Desarrollo de APIs REST con Flask y despliegue en Azure App Service
+- Configuración de pipelines ETL con Azure Data Factory
+- Desarrollo de Azure Functions con timer trigger para automatización
+- Manejo de Azure Data Lake Storage Gen2 con Python SDK
+- Resolución de problemas reales de calidad de datos
+- Despliegue de aplicaciones web estáticas con GitHub Pages
+- Gestión de CORS en aplicaciones distribuidas
+
+---
+
+## 🔮 Mejoras futuras
+
+- Migrar la transformación de Azure Functions a Azure Databricks cuando el volumen de datos supere los 5 millones de registros
+- Agregar autenticación de usuarios al dashboard web
+- Implementar notificaciones en tiempo real cuando lleguen nuevos archivos
+- Agregar módulo de comparación histórica de datos entre períodos
+- Publicar el modelo de Power BI en Power BI Service para acceso compartido
+
 
 ## 👨‍💻 Autor
 
