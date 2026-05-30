@@ -171,7 +171,7 @@ El pipeline completo implementado en Azure incluye:
 ## 👨‍💻 Autor
 
 **Julian Jimenez**
-Estudiante de Tecnología en Sistemas — Tecnológico de Antioquia
+Estudiante de Ingeniería en Software — Tecnológico de Antioquia
 Curso: Computación en la Nube 2026-1
 
 ---
